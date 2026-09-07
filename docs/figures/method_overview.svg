@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1740 700" role="img" aria-label="Diagram of the MedFusion pipeline, two independent tracks. Track A: the HAM10000 dermoscopy dataset (image plus tabular metadata) is split by lesion ID, encoded by a shared ResNet-18 image encoder and a tabular MLP encoder, then routed through five conditions -- image-only, tabular-only, early fusion, late fusion, and cross-attention fusion -- all sharing the same backbone and head initialization, producing a fusion-strategy comparison of macro-F1, per-class AUROC, and confusion matrices. Track B: the BraTS 2020 brain MRI dataset (four co-registered sequences: T1, T1ce, T2, FLAIR) is split by patient ID, and a shared small 2D U-Net segments the tumor under three input-channel conditions -- all four sequences fused, FLAIR only, and T1ce only -- producing a Dice and IoU comparison that isolates the gain from sequence fusion. Both tracks are supervised, with the fused-versus-single-modality gap as the headline result in each.">
+  <title>MedFusion Method Overview</title>
+  <desc>Track A (top): HAM10000 dermoscopy images plus tabular metadata (age, sex, localization), split by lesion ID to avoid leakage. A ResNet-18 image encoder and a tabular MLP encoder feed five conditions -- image-only, tabular-only, early fusion, late fusion, cross-attention fusion -- all sharing the same backbone/head initialization, so any gap is attributable to the fusion strategy. Outcome: a fusion-strategy comparison (macro-F1, per-class AUROC, confusion matrices). Track B (bottom): BraTS 2020 brain MRI, four co-registered sequences (T1, T1ce, T2, FLAIR) plus tumor segmentation masks, split by patient ID. A single small 2D U-Net architecture segments the tumor under three input-channel conditions -- fused 4-sequence, FLAIR-only, T1ce-only -- isolating the effect of sequence fusion. Outcome: a Dice/IoU comparison with the fused-vs-single-sequence gap as the headline number. Both tracks are independent, supervised, and share no code path with each other beyond the notebook they live in.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#374151"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1740" height="700" fill="#ffffff"/>
+
+  <text x="870" y="30" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#111827">MedFusion — Method Overview</text>
+  <text x="870" y="50" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12.5" fill="#4b5563">Two independent tracks, two fusion problems: image + tabular (HAM10000) and image + image (BraTS)</text>
+
+  <!-- ================= TRACK A ================= -->
+  <text x="20" y="86" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="700" fill="#1f2937">Track A — image + tabular</text>
+
+  <!-- A col1: data -->
+  <rect x="20" y="100" width="230" height="150" rx="8" fill="#eef4fb" stroke="#4a6fa5" stroke-width="1.5"/>
+  <text x="135" y="128" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="700" fill="#1f2937">HAM10000</text>
+  <text x="135" y="148" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">10,015 dermoscopy images</text>
+  <text x="135" y="166" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">+ tabular: age, sex, site</text>
+  <text x="135" y="184" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">7-class diagnosis label</text>
+  <text x="135" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">split grouped by lesion_id</text>
+  <text x="135" y="226" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">(no lesion crosses splits)</text>
+
+  <path d="M250,175 L300,175" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- A col2: two encoders -->
+  <rect x="300" y="100" width="210" height="65" rx="8" fill="#eef4fb" stroke="#4a6fa5" stroke-width="1.5"/>
+  <text x="405" y="125" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937">Image encoder</text>
+  <text x="405" y="144" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#374151">ResNet-18, ImageNet init</text>
+
+  <rect x="300" y="185" width="210" height="65" rx="8" fill="#eef4fb" stroke="#4a6fa5" stroke-width="1.5"/>
+  <text x="405" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937">Tabular encoder</text>
+  <text x="405" y="229" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#374151">MLP over age/sex/site embeds</text>
+
+  <path d="M510,132 L560,175" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M510,217 L560,175" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- A col3: 5-condition grid (orange, shared-init accent) -->
+  <rect x="560" y="100" width="260" height="150" rx="10" fill="#fff3e0" stroke="#c2760f" stroke-width="2"/>
+  <text x="690" y="126" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="700" fill="#7c4a03">5 fusion conditions</text>
+  <text x="690" y="147" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c4325">image-only · tabular-only</text>
+  <text x="690" y="165" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c4325">early · late · cross-attention</text>
+  <text x="690" y="187" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">same backbone/head init —</text>
+  <text x="690" y="203" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">only the fusion mechanism varies</text>
+  <text x="690" y="225" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">focal loss, class-imbalance aware</text>
+
+  <path d="M820,175 L880,175" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- A col4: outcome (green) -->
+  <rect x="880" y="90" width="360" height="170" rx="10" fill="#eaf6ee" stroke="#3f8f5f" stroke-width="1.5"/>
+  <text x="1060" y="122" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="700" fill="#1f5c37">Fusion-strategy comparison</text>
+  <text x="1060" y="146" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2f4f3d">macro-F1 · per-class AUROC ·</text>
+  <text x="1060" y="164" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2f4f3d">confusion matrices, all 5 conditions</text>
+  <text x="1060" y="188" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">Grad-CAM (image) + attention-weight</text>
+  <text x="1060" y="204" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">view (cross-attention condition)</text>
+  <text x="1060" y="228" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">scored on the held-out lesion-grouped test split</text>
+
+  <!-- headline callout A -->
+  <rect x="1260" y="120" width="450" height="90" rx="10" fill="#fdf2f2" stroke="#b3453f" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="1485" y="148" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#8a2f2b">Headline question A</text>
+  <text x="1485" y="170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c2b28">does fusing tabular metadata with the</text>
+  <text x="1485" y="188" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c2b28">image beat either modality alone — and which fusion strategy wins?</text>
+
+  <!-- divider -->
+  <line x1="20" y1="410" x2="1720" y2="410" stroke="#e5e7eb" stroke-width="1.5"/>
+
+  <!-- ================= TRACK B ================= -->
+  <text x="20" y="446" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="700" fill="#1f2937">Track B — image + image</text>
+
+  <!-- B col1: data -->
+  <rect x="20" y="460" width="230" height="150" rx="8" fill="#eef4fb" stroke="#4a6fa5" stroke-width="1.5"/>
+  <text x="135" y="488" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="700" fill="#1f2937">BraTS 2020</text>
+  <text x="135" y="508" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">4 co-registered MRI sequences</text>
+  <text x="135" y="526" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">T1 · T1ce · T2 · FLAIR</text>
+  <text x="135" y="544" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#374151">+ tumor segmentation mask</text>
+  <text x="135" y="570" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">split by patient ID</text>
+  <text x="135" y="586" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">(real per-patient identifier)</text>
+
+  <path d="M250,535 L300,535" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- B col2: slice extraction -->
+  <rect x="300" y="460" width="210" height="150" rx="8" fill="#eef4fb" stroke="#4a6fa5" stroke-width="1.5"/>
+  <text x="405" y="488" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937">2D axial slices</text>
+  <text x="405" y="508" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#374151">128×128, tumor-containing</text>
+  <text x="405" y="524" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#374151">slices only, capped per patient</text>
+  <text x="405" y="550" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">stacked per condition:</text>
+  <text x="405" y="566" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">4-channel fused, or 1-channel</text>
+  <text x="405" y="582" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6b7280">single-sequence</text>
+
+  <path d="M510,535 L560,535" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- B col3: 3-condition grid (orange) -->
+  <rect x="560" y="460" width="260" height="150" rx="10" fill="#fff3e0" stroke="#c2760f" stroke-width="2"/>
+  <text x="690" y="486" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13.5" font-weight="700" fill="#7c4a03">3 input-channel conditions</text>
+  <text x="690" y="508" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c4325">fused (T1+T1ce+T2+FLAIR)</text>
+  <text x="690" y="526" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c4325">FLAIR-only · T1ce-only</text>
+  <text x="690" y="548" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">one shared 2D U-Net architecture —</text>
+  <text x="690" y="564" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">only in_channels varies</text>
+  <text x="690" y="586" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c4325">Dice + BCE loss</text>
+
+  <path d="M820,535 L880,535" fill="none" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- B col4: outcome (green) -->
+  <rect x="880" y="450" width="360" height="170" rx="10" fill="#eaf6ee" stroke="#3f8f5f" stroke-width="1.5"/>
+  <text x="1060" y="482" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="700" fill="#1f5c37">Dice / IoU comparison</text>
+  <text x="1060" y="506" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2f4f3d">fused vs. single-sequence gap</text>
+  <text x="1060" y="524" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2f4f3d">reported as the headline number</text>
+  <text x="1060" y="548" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">segmentation overlay grid: prediction</text>
+  <text x="1060" y="564" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">vs. ground truth vs. 4-sequence montage</text>
+  <text x="1060" y="588" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5b6b5f">scored on the held-out patient-level test split</text>
+
+  <!-- headline callout B -->
+  <rect x="1260" y="480" width="450" height="90" rx="10" fill="#fdf2f2" stroke="#b3453f" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="1485" y="508" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#8a2f2b">Headline question B</text>
+  <text x="1485" y="530" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c2b28">how much does fusing all four MRI</text>
+  <text x="1485" y="548" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#5c2b28">sequences improve tumor Dice over any one sequence alone?</text>
+
+  <!-- bottom annotation -->
+  <text x="870" y="660" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#6b7280">Two independent tracks, one notebook: both are supervised, both isolate a fusion effect against a shared-architecture baseline, and both</text>
+  <text x="870" y="678" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11.5" fill="#6b7280">report the fused-vs-single-modality gap as the headline result, rather than a single leaderboard-style accuracy number.</text>
+</svg>

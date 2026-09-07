@@ -1,0 +1,63 @@
+# Reference config for MedFusion's Track A: image+tabular fusion on HAM10000.
+# The notebook's CFG_A cell (notebooks/multimodal_fusion_kaggle.ipynb) is the source of truth
+# for v1.0 -- this file documents the same values for a future CLI.
+# Sized for a single NVIDIA T4 (16 GB VRAM), the free Kaggle GPU tier.
+
+# Data
+data_dir: /kaggle/input/skin-cancer-mnist-ham10000
+metadata_csv: HAM10000_metadata.csv
+output_dir: /kaggle/working/outputs
+seed: 42
+image_size: 224
+class_names: [akiec, bcc, bkl, df, mel, nv, vasc]   # 7-class HAM10000 diagnosis codes
+
+# Splits -- grouped by lesion_id, not image_id: HAM10000 has multiple images
+# of the same lesion, so an image-level split would leak the same lesion across
+# train/val/test. Analogous in spirit to Track B's patient-level split.
+test_frac: 0.15
+val_frac: 0.15
+group_column: lesion_id
+
+# Tabular features
+categorical_columns: [sex, localization]
+categorical_embed_dim: 16     # per-categorical-field embedding size
+numeric_columns: [age]        # min-max normalized to [0, 1] using train-split statistics only
+tabular_mlp_hidden: 64
+tabular_output_dim: 64        # dimensionality the tabular encoder outputs, fed into every fusion head
+
+# Image backbone
+backbone: resnet18
+pretrained_imagenet_weights: IMAGENET1K_V1
+image_feature_dim: 512        # resnet18's pre-fc feature width
+
+# Fusion heads
+fusion_hidden_dim: 256
+cross_attention_dim: 128      # single-head scaled dot-product attention, kept single-head for a legible worked example
+conditions: [image_only, tabular_only, early_fusion, late_fusion, cross_attention_fusion]
+
+# Training -- shared across all 5 conditions so any gap is attributable to fusion strategy
+batch_size: 64
+epochs: 10                    # capped: 5 conditions x 10 epochs keeps total Track A runtime bounded for one Kaggle session
+lr: 3.0e-4
+backbone_lr_mult: 0.1         # ImageNet-pretrained backbone fine-tunes slower than the randomly-initialized fusion head
+weight_decay: 1.0e-5
+
+# Loss -- focal loss, not plain cross-entropy, because of the HAM10000 class imbalance
+# (nv is ~67% of the dataset; df and vasc are each under 2%)
+loss: focal
+focal_gamma: 2.0
+
+# Augmentation -- deliberately conservative on color: lesion color/pigmentation
+# is diagnostic for melanoma, so aggressive color jitter risks destroying signal
+random_resized_crop_scale_min: 0.7
+rotation_degrees: 20
+horizontal_flip: true         # unlike CXR laterality, dermoscopy has no clinically meaningful orientation
+brightness_jitter: 0.1
+contrast_jitter: 0.1
+
+# Evaluation
+metrics: [macro_f1, per_class_auroc, confusion_matrix]
+
+# Visualization
+plot_dpi: 150
+gradcam_target_layer: layer4

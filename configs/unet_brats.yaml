@@ -1,0 +1,54 @@
+# Reference config for MedFusion's Track B: multi-sequence MRI fusion on BraTS2020.
+# The notebook's CFG_B cell (notebooks/multimodal_fusion_kaggle.ipynb) is the source of truth
+# for v1.0 -- this file documents the same values for a future CLI.
+# Sized for a single NVIDIA T4 (16 GB VRAM), the free Kaggle GPU tier.
+
+# Data
+data_dir: /kaggle/input/brats20-dataset-training-validation
+output_dir: /kaggle/working/outputs
+seed: 42
+sequences: [t1, t1ce, t2, flair]   # co-registered per patient; seg = ground-truth tumor mask
+native_resolution: 240              # BraTS volumes are 240x240x155 voxels
+image_size: 128                     # downsampled for T4 feasibility -- see docs/methodology.md
+
+# Patient sampling -- capped subset of BraTS2020's 369 training patients,
+# a single-session Kaggle feasibility bound directly analogous to MedSSL's pretrain_pool_size cap
+max_patients: 60
+slice_axis: axial                   # z-axis
+max_tumor_slices_per_patient: 8     # only slices with a non-empty tumor mask are sampled -- see Limitations
+min_tumor_pixels_per_slice: 50      # floor to exclude near-empty masks that make Dice degenerate
+
+# Splits -- patient-level (BraTS ships a patient ID per case, unlike HAM10000's lesion_id
+# workaround or MedSSL's dataset, which has no identifier at all)
+test_frac: 0.15
+val_frac: 0.15
+
+# Segmentation target -- binary whole-tumor mask (BraTS label > 0), not the full
+# 4-class label set (necrotic core / edema / enhancing tumor) -- a v1.0 scope decision, see Roadmap
+n_classes: 1
+
+# Model -- small 2D U-Net, from scratch (no pretrained segmentation weights)
+unet_base_channels: 32
+unet_depth: 4
+conditions: [fused_4seq, flair_only, t1ce_only]
+in_channels: {fused_4seq: 4, flair_only: 1, t1ce_only: 1}
+
+# Training -- identical architecture/init across all 3 conditions so any Dice
+# gap is attributable to input-channel count, not a confound
+batch_size: 16
+epochs: 20                          # capped: 3 conditions x 20 epochs, single-session feasibility bound
+lr: 1.0e-3
+optimizer: adam
+weight_decay: 1.0e-5
+
+# Loss -- combined Dice + BCE, standard for segmentation under foreground/background imbalance
+loss: dice_bce
+dice_bce_weight: 0.5                # 0.5 Dice + 0.5 BCE
+dice_smooth: 1.0
+
+# Evaluation
+metrics: [dice, iou]
+
+# Visualization
+plot_dpi: 150
+overlay_alpha: 0.4
