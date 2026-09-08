@@ -1,4 +1,4 @@
-# MedFusion
+# MedFusion: Multi-Modal Fusion Strategies Across Image+Tabular and Image+Image Medical Data
 
 ### Does multimodal fusion actually improve medical AI?
 
